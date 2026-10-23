@@ -1,0 +1,2585 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>清鉴 · 清史研究智能体</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   清鉴 — 清史研究智能体
+   设计概念：数字御书房 · Digital Imperial Study
+   ============================================================ */
+
+:root {
+  /* 主色调 — 清代宫廷配色 */
+  --vermillion:    #B23A3A;  /* 宫墙红 */
+  --vermillion-deep: #8B1A1A; /* 深红/朱砂 */
+  --vermillion-light: #D4A0A0;
+  --gold:          #B49450;  /* 鎏金 */
+  --gold-light:    #D4C08C;
+  --gold-pale:     #EDE4CF;
+  --ink:           #2C2416;  /* 墨色 */
+  --ink-soft:      #4A4235;
+  --ink-light:     #8C8470;
+  --paper:         #F8F3E8;  /* 宣纸 */
+  --paper-warm:    #F0E8D5;
+  --paper-dark:    #E8DDC8;
+  --jade:          #5D8A6A;  /* 青玉 */
+  --jade-light:    #8BB59A;
+  --jade-pale:     #D8EBDE;
+  --celadon:       #A8C9B8;  /* 青瓷 */
+  --blue-ming:     #3A5A7C;  /* 明青花 */
+  --blue-pale:     #D8E3EC;
+
+  /* 三种史料类型专属色 */
+  --type-dict:       #8B4513;  /* 词典 — 檀木棕 */
+  --type-dict-bg:    #F5EDE1;
+  --type-dict-border:#D4C4A8;
+  --type-chronicle:  #2E5E4E;  /* 编年 — 古卷青 */
+  --type-chronicle-bg:   #E4F0E8;
+  --type-chronicle-border:#B4D0BE;
+  --type-archive:    #7B3F5C;  /* 档案 — 奏折紫 */
+  --type-archive-bg: #F3E8EE;
+  --type-archive-border:#D4BCCC;
+
+  /* 语义色 */
+  --surface:       #FDF9F2;
+  --surface-alt:   #F5EDDF;
+  --border:        #D8CCB0;
+  --border-light:  #E8DDC8;
+  --text-primary:  #2C2416;
+  --text-secondary:#5C5445;
+  --text-muted:    #9C9485;
+
+  /* 尺寸 */
+  --sidebar-width: 420px;
+  --header-height: 64px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  /* 字体 */
+  --font-display: 'Noto Serif SC', 'SimSun', 'STSong', serif;
+  --font-calligraphy: 'Ma Shan Zheng', 'ZCOOL XiaoWei', cursive;
+  --font-body: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-serif: 'Noto Serif SC', 'SimSun', serif;
+
+  /* 过渡 */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--paper);
+  color: var(--text-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 宣纸纹理背景 */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(139, 119, 90, 0.015) 2px,
+      rgba(139, 119, 90, 0.015) 4px
+    ),
+    radial-gradient(ellipse at 20% 50%, rgba(180, 148, 80, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(139, 26, 26, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 80%, rgba(93, 138, 106, 0.03) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+#app {
+  display: flex;
+  height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================================
+   LEFT PANEL — 对话区
+   ============================================================ */
+.chat-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  position: relative;
+}
+
+/* ---- Header ---- */
+.chat-header {
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  padding: 0 28px;
+  gap: 14px;
+  border-bottom: 1px solid var(--border-light);
+  background: linear-gradient(180deg, rgba(248,243,232,0.98) 0%, rgba(240,232,213,0.95) 100%);
+  backdrop-filter: blur(10px);
+  flex-shrink: 0;
+}
+
+.brand-mark {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--vermillion) 0%, var(--vermillion-deep) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-family: var(--font-calligraphy);
+  font-size: 22px;
+  box-shadow: 0 2px 8px rgba(139, 26, 26, 0.25);
+  flex-shrink: 0;
+}
+
+.brand-text h1 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0.08em;
+}
+
+.brand-text span {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 400;
+  letter-spacing: 0.05em;
+}
+
+.header-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+.header-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s var(--ease-smooth);
+  font-size: 15px;
+}
+
+.header-btn:hover {
+  background: var(--gold-pale);
+  border-color: var(--gold-light);
+  color: var(--ink);
+}
+
+/* ---- Messages Area ---- */
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  scroll-behavior: smooth;
+}
+
+/* 滚动条 */
+.messages-container::-webkit-scrollbar {
+  width: 5px;
+}
+.messages-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+.messages-container::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+}
+.messages-container::-webkit-scrollbar-thumb:hover {
+  background: var(--gold-light);
+}
+
+/* ---- Welcome State ---- */
+.welcome-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px;
+  animation: fadeInUp 0.8s var(--ease-smooth) both;
+}
+
+.welcome-seal {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 3px solid var(--vermillion);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  position: relative;
+  background: var(--surface);
+  box-shadow: 0 4px 20px rgba(139, 26, 26, 0.1);
+}
+
+.welcome-seal::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  opacity: 0.5;
+}
+
+.welcome-seal span {
+  font-family: var(--font-calligraphy);
+  font-size: 36px;
+  color: var(--vermillion);
+}
+
+.welcome-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 8px;
+  letter-spacing: 0.06em;
+}
+
+.welcome-subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  max-width: 380px;
+  line-height: 1.7;
+}
+
+.welcome-hints {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 28px;
+  justify-content: center;
+}
+
+.hint-chip {
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  background: var(--surface);
+  cursor: pointer;
+  transition: all 0.2s var(--ease-smooth);
+  font-family: var(--font-body);
+  white-space: nowrap;
+}
+
+.hint-chip:hover {
+  background: var(--gold-pale);
+  border-color: var(--gold-light);
+  color: var(--ink);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+/* ---- Message Bubbles ---- */
+.message {
+  display: flex;
+  gap: 12px;
+  animation: fadeInUp 0.4s var(--ease-smooth) both;
+  max-width: 100%;
+}
+
+.message.user {
+  flex-direction: row-reverse;
+}
+
+.message-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.message.user .message-avatar {
+  background: var(--blue-ming);
+  color: #fff;
+}
+
+.message.agent .message-avatar {
+  background: var(--vermillion);
+  color: #fff;
+  font-family: var(--font-calligraphy);
+  font-size: 20px;
+}
+
+.message-body {
+  max-width: 78%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.message.user .message-body {
+  align-items: flex-end;
+}
+
+.message-content {
+  padding: 14px 18px;
+  border-radius: var(--radius-lg);
+  font-size: 14px;
+  line-height: 1.7;
+  word-break: break-word;
+}
+
+.message.user .message-content {
+  background: var(--blue-pale);
+  color: var(--ink);
+  border-bottom-right-radius: var(--radius-sm);
+}
+
+.message.agent .message-content {
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--border-light);
+  border-bottom-left-radius: var(--radius-sm);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+/* ---- Agent 消息内 Markdown 渲染样式 ---- */
+.message-content .md-h1 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 16px 0 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-light);
+  letter-spacing: 0.04em;
+}
+
+.message-content .md-h2 {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  margin: 14px 0 8px;
+  letter-spacing: 0.03em;
+}
+
+.message-content .md-h3 {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  margin: 12px 0 6px;
+}
+
+.message-content .md-p {
+  margin: 4px 0;
+  line-height: 1.75;
+}
+
+.message-content .md-hr {
+  border: none;
+  border-top: 1px solid var(--border-light);
+  margin: 12px 0;
+}
+
+.message-content .md-list {
+  margin: 6px 0;
+  padding-left: 20px;
+  line-height: 1.75;
+}
+
+.message-content .md-list li {
+  margin: 2px 0;
+  color: var(--text-primary);
+}
+
+/* 无序列表：保留浏览器圆点 */
+.message-content ul.md-list {
+  list-style-type: disc;
+}
+.message-content ul.md-list li::marker {
+  color: var(--gold);
+}
+
+/* 有序列表：用原文数字，不用浏览器自动编号（防止段落打断后全部重置为 1） */
+.message-content ol.md-list {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.message-content .md-code {
+  background: var(--paper-warm);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Courier New', 'SimSun', monospace;
+  font-size: 13px;
+  color: var(--vermillion-deep);
+  border: 1px solid var(--border-light);
+}
+
+.message-content strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.message-content em {
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+.message-time {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 0 4px;
+}
+
+/* Agent message 中的引用标签 — 按史料类型着色 */
+.citation-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s var(--ease-smooth);
+  vertical-align: middle;
+  margin: 0 2px;
+  font-family: var(--font-serif);
+  background: var(--gold-pale);
+  border: 1px solid var(--gold-light);
+  color: var(--ink-soft);
+}
+
+.citation-tag:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+
+.citation-tag.dict {
+  background: var(--type-dict-bg);
+  border-color: var(--type-dict-border);
+  color: var(--type-dict);
+}
+.citation-tag.chron {
+  background: var(--type-chronicle-bg);
+  border-color: var(--type-chronicle-border);
+  color: var(--type-chronicle);
+}
+.citation-tag.arch {
+  background: var(--type-archive-bg);
+  border-color: var(--type-archive-border);
+  color: var(--type-archive);
+}
+.citation-tag.dict:hover  { background: var(--type-dict-border); color: #fff; }
+.citation-tag.chron:hover { background: var(--type-chronicle); color: #fff; }
+.citation-tag.arch:hover  { background: var(--type-archive); color: #fff; }
+
+.citation-tag .citation-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.citation-dot.dict  { background: var(--type-dict); }
+.citation-dot.chron { background: var(--type-chronicle); }
+.citation-dot.arch  { background: var(--type-archive); }
+
+/* ---- Input Area ---- */
+.input-area {
+  padding: 16px 28px 24px;
+  border-top: 1px solid var(--border-light);
+  background: linear-gradient(0deg, rgba(248,243,232,0.98) 0%, rgba(253,249,242,0.9) 100%);
+  flex-shrink: 0;
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 8px 12px;
+  transition: all 0.2s var(--ease-smooth);
+}
+
+.input-wrapper:focus-within {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(180, 148, 80, 0.1);
+}
+
+.input-wrapper textarea {
+  flex: 1;
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink);
+  background: transparent;
+  max-height: 120px;
+  min-height: 24px;
+  padding: 4px 0;
+}
+
+.input-wrapper textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.send-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: var(--vermillion);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s var(--ease-smooth);
+  flex-shrink: 0;
+  font-size: 18px;
+}
+
+.send-btn:hover {
+  background: var(--vermillion-deep);
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(139, 26, 26, 0.3);
+}
+
+.send-btn:active {
+  transform: scale(0.95);
+}
+
+.send-btn:disabled {
+  background: var(--border);
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.input-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding: 0 4px;
+}
+
+.input-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.model-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+}
+
+.model-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--jade);
+}
+
+/* ---- Loading indicator ---- */
+.typing-indicator {
+  display: flex;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+.typing-indicator span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold-light);
+  animation: bounce 1.4s ease-in-out infinite both;
+}
+
+.typing-indicator span:nth-child(1) { animation-delay: 0s; }
+.typing-indicator span:nth-child(2) { animation-delay: 0.16s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.32s; }
+
+/* ============================================================
+   RIGHT PANEL — 引用详情区
+   ============================================================ */
+.reference-panel {
+  width: var(--sidebar-width);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-alt);
+  border-left: 1px solid var(--border);
+  flex-shrink: 0;
+  transition: width 0.3s var(--ease-smooth), opacity 0.3s;
+  overflow: hidden;
+}
+
+.reference-panel.collapsed {
+  width: 0;
+  border-left: none;
+}
+
+/* ---- Reference Header ---- */
+.reference-header {
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 10px;
+  border-bottom: 1px solid var(--border-light);
+  flex-shrink: 0;
+}
+
+.reference-header-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--gold-pale);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.reference-header h2 {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: 0.04em;
+}
+
+.reference-count {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--surface);
+  padding: 2px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+}
+
+.ref-collapse-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all 0.2s;
+  margin-left: 4px;
+}
+
+.ref-collapse-btn:hover {
+  background: var(--gold-pale);
+}
+
+/* ---- Reference Content ---- */
+.reference-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.reference-content::-webkit-scrollbar {
+  width: 4px;
+}
+.reference-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+.reference-content::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+}
+
+/* ---- Reference Card ---- */
+.ref-card {
+  background: #fff;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  transition: all 0.2s var(--ease-smooth);
+  cursor: pointer;
+  position: relative;
+  animation: fadeInRight 0.4s var(--ease-smooth) both;
+}
+
+.ref-card:hover {
+  border-color: var(--gold-light);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+  transform: translateX(-2px);
+}
+
+.ref-card.active {
+  background: #FFFBF5;
+}
+
+.ref-card.active.dictionary {
+  border-color: var(--type-dict);
+  border-left: 3px solid var(--type-dict);
+}
+
+.ref-card.active.chronicle {
+  border-color: var(--type-chronicle);
+  border-left: 3px solid var(--type-chronicle);
+}
+
+.ref-card.active.archive {
+  border-color: var(--type-archive);
+  border-left: 3px solid var(--type-archive);
+}
+
+.ref-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.ref-source-type {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.ref-source-type.dictionary {
+  background: var(--type-dict-bg);
+  color: var(--type-dict);
+  border: 1px solid var(--type-dict-border);
+}
+
+.ref-source-type.chronicle {
+  background: var(--type-chronicle-bg);
+  color: var(--type-chronicle);
+  border: 1px solid var(--type-chronicle-border);
+}
+
+.ref-source-type.archive {
+  background: var(--type-archive-bg);
+  color: var(--type-archive);
+  border: 1px solid var(--type-archive-border);
+}
+
+/* 编年数据 — 文言原文 + 现代文精炼 双栏 */
+.chronicle-dual {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.chronicle-classical,
+.chronicle-modern {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.chronicle-classical {
+  background: var(--paper-warm);
+  border: 1px solid var(--border-light);
+  font-family: var(--font-serif);
+  color: var(--ink-soft);
+  position: relative;
+}
+
+.chronicle-modern {
+  background: var(--type-chronicle-bg);
+  border: 1px solid var(--type-chronicle-border);
+  font-family: var(--font-body);
+  color: var(--ink);
+  position: relative;
+}
+
+.chronicle-label {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-bottom: 6px;
+  font-family: var(--font-body);
+}
+
+.chronicle-label.classical {
+  background: var(--border-light);
+  color: var(--text-muted);
+}
+
+.chronicle-label.modern {
+  background: rgba(46,94,78,0.15);
+  color: var(--type-chronicle);
+}
+
+.ref-relevance {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ref-relevance-bar {
+  width: 40px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--border-light);
+  overflow: hidden;
+}
+
+.ref-relevance-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--gold);
+}
+
+.ref-title {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.ref-excerpt {
+  font-family: var(--font-serif);
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.8;
+  padding: 10px 12px;
+  background: var(--paper-warm);
+  border-radius: var(--radius-sm);
+  border-left: 2px solid var(--gold-light);
+  margin-bottom: 10px;
+  position: relative;
+  overflow: hidden;
+  transition: max-height 0.35s var(--ease-smooth);
+}
+
+.ref-excerpt.collapsed {
+  max-height: 120px;
+}
+
+.ref-excerpt.expanded {
+  max-height: 2000px;
+}
+
+.ref-excerpt-empty {
+  font-family: var(--font-serif);
+  font-size: 13px;
+  color: var(--text-muted);
+  font-style: italic;
+  line-height: 1.8;
+  padding: 10px 12px;
+  background: var(--paper-warm);
+  border-radius: var(--radius-sm);
+  border-left: 2px solid var(--border-light);
+  margin-bottom: 10px;
+}
+
+.ref-excerpt-toggle {
+  display: block;
+  width: 100%;
+  padding: 4px 0;
+  margin-top: -6px;
+  margin-bottom: 8px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--gold);
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+  transition: color 0.2s;
+}
+
+.ref-excerpt-toggle:hover {
+  color: var(--vermillion);
+}
+
+.ref-excerpt-fade {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: linear-gradient(transparent, var(--paper-warm));
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+.ref-excerpt.expanded .ref-excerpt-fade {
+  opacity: 0;
+}
+
+.ref-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.ref-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ---- Source Breakdown Bar ---- */
+.source-breakdown {
+  padding: 10px 16px 6px;
+  border-bottom: 1px solid var(--border-light);
+  flex-shrink: 0;
+}
+
+.breakdown-bar {
+  display: flex;
+  height: 4px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: var(--border-light);
+  gap: 1px;
+}
+
+.breakdown-seg {
+  transition: width 0.4s var(--ease-smooth);
+}
+
+.breakdown-seg.dict  { background: var(--type-dict); }
+.breakdown-seg.chron { background: var(--type-chronicle); }
+.breakdown-seg.arch  { background: var(--type-archive); }
+
+.breakdown-labels {
+  display: flex;
+  gap: 16px;
+  margin-top: 6px;
+  font-size: 11px;
+}
+
+.breakdown-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-muted);
+}
+
+.breakdown-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.breakdown-dot.dict-dot  { background: var(--type-dict); }
+.breakdown-dot.chron-dot { background: var(--type-chronicle); }
+.breakdown-dot.arch-dot  { background: var(--type-archive); }
+
+/* ---- Reference Empty State ---- */
+.reference-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 24px;
+  color: var(--text-muted);
+}
+
+.reference-empty-icon {
+  font-size: 40px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.reference-empty p {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* ============================================================
+   TOGGLE BUTTON (when panel collapsed)
+   ============================================================ */
+.toggle-ref-btn {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 64px;
+  border-radius: 8px 0 0 8px;
+  border: 1px solid var(--border);
+  border-right: none;
+  background: var(--surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  z-index: 10;
+  transition: all 0.2s;
+}
+
+.toggle-ref-btn:hover {
+  background: var(--gold-pale);
+}
+
+.reference-panel.collapsed ~ .toggle-ref-btn {
+  display: flex;
+}
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInRight {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes sealPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(139, 26, 26, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(139, 26, 26, 0);
+  }
+}
+
+/* ============================================================
+   THINKING PANEL — 思考过程展示
+   ============================================================ */
+.thinking-panel {
+  margin: 0;
+  background: linear-gradient(135deg, #FDFAF3 0%, #F8F2E6 100%);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  animation: fadeInUp 0.35s var(--ease-smooth) both;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+
+.thinking-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: linear-gradient(180deg, rgba(240,232,213,0.6) 0%, rgba(248,243,232,0.3) 100%);
+  border-bottom: 1px solid var(--border-light);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+}
+
+.thinking-header:hover {
+  background: linear-gradient(180deg, rgba(232,220,200,0.6) 0%, rgba(240,232,213,0.4) 100%);
+}
+
+.thinking-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.thinking-status {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--gold);
+  font-weight: 500;
+  animation: thinkingPulse 2s ease-in-out infinite;
+}
+
+.thinking-status.done {
+  color: var(--jade);
+  animation: none;
+}
+
+.thinking-toggle {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--text-muted);
+  transition: transform 0.3s var(--ease-smooth);
+}
+
+.thinking-panel.collapsed .thinking-toggle {
+  transform: rotate(-90deg);
+}
+
+.thinking-panel.collapsed .thinking-steps {
+  display: none;
+}
+
+.thinking-steps {
+  padding: 8px 12px 12px;
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.thinking-steps::-webkit-scrollbar {
+  width: 3px;
+}
+.thinking-steps::-webkit-scrollbar-track {
+  background: transparent;
+}
+.thinking-steps::-webkit-scrollbar-thumb {
+  background: var(--border-light);
+  border-radius: 10px;
+}
+
+.thinking-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  transition: all 0.3s var(--ease-smooth);
+  animation: fadeInUp 0.3s var(--ease-smooth) both;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.thinking-step.active {
+  background: rgba(180, 148, 80, 0.08);
+  border-left: 2px solid var(--gold);
+}
+
+.thinking-step.active .step-icon {
+  animation: thinkingPulse 1.5s ease-in-out infinite;
+}
+
+.thinking-step.done {
+  background: transparent;
+  border-left: 2px solid transparent;
+}
+
+.thinking-step.done .step-text {
+  color: var(--text-secondary);
+}
+
+.thinking-step.warning {
+  background: rgba(200, 160, 60, 0.06);
+  border-left: 2px solid #C8A03C;
+}
+
+.thinking-step.error {
+  background: rgba(178, 58, 58, 0.05);
+  border-left: 2px solid var(--vermillion);
+}
+
+.thinking-step.error .step-text {
+  color: var(--vermillion);
+}
+
+.step-icon {
+  font-size: 15px;
+  flex-shrink: 0;
+  width: 22px;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.step-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.step-text {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.step-detail {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  word-break: break-all;
+}
+
+/* 数据库类型小标签 */
+.step-badge {
+  display: inline-block;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.step-badge.dict {
+  background: var(--type-dict-bg);
+  color: var(--type-dict);
+  border: 1px solid var(--type-dict-border);
+}
+
+.step-badge.annals {
+  background: var(--type-chronicle-bg);
+  color: var(--type-chronicle);
+  border: 1px solid var(--type-chronicle-border);
+}
+
+.step-badge.memorials {
+  background: var(--type-archive-bg);
+  color: var(--type-archive);
+  border: 1px solid var(--type-archive-border);
+}
+
+/* 思考面板折叠后的摘要 */
+.thinking-summary {
+  display: none;
+  padding: 8px 16px 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  line-height: 1.5;
+}
+
+.thinking-panel.done-collapsed .thinking-summary {
+  display: block;
+}
+
+.thinking-panel.done-collapsed .thinking-header {
+  border-bottom: none;
+}
+
+.thinking-panel.done-collapsed .thinking-steps {
+  display: none;
+}
+
+/* AI 原始回复代码块 */
+.ai-reply-block {
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: rgba(44, 36, 22, 0.04);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  font-family: 'Courier New', 'SimSun', 'Noto Sans SC', monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  max-height: 60px;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  transition: max-height 0.3s var(--ease-smooth);
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+.ai-reply-block.expanded {
+  max-height: 600px;
+  cursor: default;
+}
+
+.ai-reply-block::after {
+  content: '点击展开全文 ▼';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+  padding: 10px 0 4px;
+  font-size: 11px;
+  color: var(--gold);
+  font-family: var(--font-body);
+  background: linear-gradient(transparent, rgba(248, 243, 232, 0.95));
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.ai-reply-block.expanded::after {
+  content: '▲ 收起';
+  background: transparent;
+}
+
+.ai-reply-toggle {
+  display: block;
+  font-size: 11px;
+  color: var(--gold);
+  cursor: pointer;
+  margin-top: 4px;
+  font-family: var(--font-body);
+  text-align: right;
+  transition: color 0.2s;
+}
+
+.ai-reply-toggle:hover {
+  color: var(--vermillion);
+}
+
+@keyframes thinkingPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 900px) {
+  .reference-panel {
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 20;
+    box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+  }
+
+  .reference-panel.collapsed {
+    width: 0;
+  }
+
+  .toggle-ref-btn {
+    display: flex !important;
+  }
+
+  .message-body {
+    max-width: 90%;
+  }
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- =========================================================
+       LEFT PANEL — 对话区
+       ========================================================= -->
+  <div class="chat-panel">
+    <!-- Header -->
+    <header class="chat-header">
+      <div class="brand-mark">鉴</div>
+      <div class="brand-text">
+        <h1>清鉴</h1>
+        <span>QING DYNASTY RESEARCH AGENT</span>
+      </div>
+      <div class="header-actions">
+        <button class="header-btn" title="新建对话" onclick="newSession()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Messages -->
+    <div class="messages-container" id="messagesContainer">
+      <!-- Welcome state -->
+      <div class="welcome-area" id="welcomeArea">
+        <div class="welcome-seal">
+          <span>清</span>
+        </div>
+        <h2 class="welcome-title">清史研究智能助手</h2>
+        <p class="welcome-subtitle">
+          融合词典释义、编年史料、奏折档案三种文献，助您探索有清一代的制度、人物、事件与文化。
+        </p>
+        <div class="welcome-hints">
+          <button class="hint-chip" onclick="askHint('雍正朝的军机处是如何运作的？')">雍正朝军机处</button>
+          <button class="hint-chip" onclick="askHint('八旗制度在入关前后有何变化？')">八旗制度演变</button>
+          <button class="hint-chip" onclick="askHint('乾隆朝的十全武功指哪些？')">乾隆十全武功</button>
+          <button class="hint-chip" onclick="askHint('清代江南三大织造局的职能？')">江南织造局</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="input-area">
+      <div class="input-wrapper">
+        <textarea
+          id="userInput"
+          rows="1"
+          placeholder="输入您想了解的清史问题..."
+          onkeydown="handleKeyDown(event)"
+          oninput="autoResize(this)"
+        ></textarea>
+        <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="发送">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="19" x2="12" y2="5"/>
+            <polyline points="5 12 12 5 19 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="input-footer">
+        <span class="input-hint">三库检索：词典 · 编年 · 档案</span>
+        <span class="model-badge">
+          <span class="model-dot"></span>
+          清史知识库
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       RIGHT PANEL — 引用详情区
+       ========================================================= -->
+  <div class="reference-panel" id="referencePanel">
+    <header class="reference-header">
+      <div class="reference-header-icon">📜</div>
+      <h2>史料引用</h2>
+      <span class="reference-count" id="refCount">0 条</span>
+      <button class="ref-collapse-btn" onclick="toggleReferencePanel()" title="收起引用面板">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+    </header>
+
+    <!-- 来源分布条 -->
+    <div class="source-breakdown" id="sourceBreakdown" style="display:none;">
+      <div class="breakdown-bar">
+        <div class="breakdown-seg dict" id="breakdownDict" style="width:0%"></div>
+        <div class="breakdown-seg chron" id="breakdownChron" style="width:0%"></div>
+        <div class="breakdown-seg arch" id="breakdownArch" style="width:0%"></div>
+      </div>
+      <div class="breakdown-labels">
+        <span class="breakdown-label dict"><span class="breakdown-dot dict-dot"></span>词典</span>
+        <span class="breakdown-label chron"><span class="breakdown-dot chron-dot"></span>编年</span>
+        <span class="breakdown-label arch"><span class="breakdown-dot arch-dot"></span>档案</span>
+      </div>
+    </div>
+
+    <div class="reference-content" id="referenceContent">
+      <div class="reference-empty" id="referenceEmpty">
+        <div class="reference-empty-icon">📖</div>
+        <p>此处将展示<br>智能体回答中引用的<br>原始史料详情</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toggle button when panel collapsed -->
+  <button class="toggle-ref-btn" id="toggleRefBtn" onclick="toggleReferencePanel()" title="展开引用面板">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="9 18 15 12 9 6"/>
+    </svg>
+  </button>
+</div>
+
+<script>
+/* ============================================================
+   清鉴 · 前端逻辑
+   后端: Python Searcho1 架构 / 三路检索: 词典·编年·档案
+   ============================================================ */
+
+// ---- State ----
+const state = {
+  messages: [],
+  references: [],
+  activeRefId: null,
+  isPanelCollapsed: false,
+  isLoading: false,
+  sessionId: generateId()
+};
+
+// ---- DOM refs ----
+const messagesContainer = document.getElementById('messagesContainer');
+const welcomeArea = document.getElementById('welcomeArea');
+const referenceContent = document.getElementById('referenceContent');
+const referenceEmpty = document.getElementById('referenceEmpty');
+const refCount = document.getElementById('refCount');
+const userInput = document.getElementById('userInput');
+const sendBtn = document.getElementById('sendBtn');
+const referencePanel = document.getElementById('referencePanel');
+const toggleRefBtn = document.getElementById('toggleRefBtn');
+
+// ============================================================
+//  🔌 API 接口层 — Searcho1 后端接入 (Python)
+//  三路检索: 词典(概念解释) / 编年(文言原文+LLM精炼) / 档案(奏折)
+//  唯一端点: POST /api/chat  — { query, session_id } → { answer, references[] }
+// ============================================================
+
+/**
+ * Reference 类型 (后端 Python Searcho1 返回):
+ *
+ * dictionary → { id, type:"dictionary", title, excerpt, source, date, relevance }
+ *
+ * chronicle  → { id, type:"chronicle", title, classical_text (文言原文),
+ *                modern_text (LLM精炼现代文), source, date, relevance }
+ *
+ * archive    → { id, type:"archive", title, excerpt, source, date, relevance,
+ *                memorial_from (具奏人), memorial_to (收件人) }
+ */
+async function apiChat(query, sessionId) {
+  // ============================================================
+  // 🔌 接口预留：将此 URL 替换为实际后端地址
+  // ============================================================
+  const API_BASE = window.location.hostname ? '' : 'http://localhost:8000';
+
+  try {
+    const response = await fetch(`${API_BASE}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, session_id: sessionId })
+    });
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    return await response.json();
+  } catch (error) {
+    console.warn('后端未连接，使用模拟数据。错误:', error.message);
+    return generateMockResponse(query);
+  }
+}
+
+// ============================================================
+//  模拟数据生成器 — 后端接入后可删除
+// ============================================================
+function generateMockResponse(query) {
+  // 演示用模拟数据 — 每种史料类型各一条
+  const mockData = {
+    '雍正': {
+      answer: `雍正皇帝在位期间（1723–1735年），对清朝政治体制进行了多项重大改革，其中最具代表性的便是**军机处的设立**[1]。
+
+**军机处**作为一个制度概念，其性质是清代中后期的核心决策机构，直接对皇帝负责，绕过了内阁的繁文缛节[2]。
+
+雍正七年（1729年）六月，因西北用兵需要，雍正帝命怡亲王允祥、大学士张廷玉、蒋廷锡在乾清门外设立**军机房**，后改称军机处[3]。这一日期标志着清代中枢权力结构的重大转折。
+
+从奏折文献来看，军机处设立后，相关谕旨的流转效率显著提升——"凡有谕旨，即时缮写，密封钤印，由兵部驿递"，可见其办事之迅速与保密之严格[1]。`,
+      references: [
+        {
+          id: 'ref_001',
+          type: 'archive',
+          title: '军机处录副奏折·雍正七年八月',
+          excerpt: '……臣等遵旨办理军需事务，凡有谕旨，即时缮写，密封钤印，由兵部驿递，直达该督抚衙门，毋得迟误……',
+          source: '中国第一历史档案馆藏·军机处录副奏折',
+          date: '雍正七年八月（1729年）',
+          relevance: 0.95,
+          memorial_from: '怡亲王允祥等',
+          memorial_to: '雍正帝'
+        },
+        {
+          id: 'ref_002',
+          type: 'dictionary',
+          title: '军机处',
+          excerpt: '军机处，清代官署名。雍正七年（1729年）因用兵西北，设军机房，后改军机处。掌军国大政，以赞机务。军机大臣无定员，由大学士、尚书、侍郎内特旨召入。其属曰军机章京，掌缮写谕旨、记载档册、查核奏议。',
+          source: '《清代典章制度辞典》',
+          date: '雍正七年至宣统三年（1729–1911年）',
+          relevance: 0.88
+        },
+        {
+          id: 'ref_003',
+          type: 'chronicle',
+          title: '雍正七年六月·设军机房',
+          classical_text: '雍正七年六月癸未，上命怡亲王允祥、大学士张廷玉、蒋廷锡办理军需事务。寻设军机房于乾清门外，拣选内阁中书之谨密者入直缮写。',
+          modern_text: '雍正七年（1729年）六月，雍正帝任命怡亲王允祥、大学士张廷玉和蒋廷锡负责西北军需事务。随后在乾清门外设立军机房（后改称军机处），挑选内阁中书中谨慎保密的人员入值，负责缮写谕旨。',
+          source: '《清实录·世宗实录》卷八十二',
+          date: '雍正七年六月癸未（1729年）',
+          relevance: 0.91
+        }
+      ]
+    }
+  };
+
+  for (const [key, data] of Object.entries(mockData)) {
+    if (query.includes(key)) return data;
+  }
+
+  return {
+    answer: `关于您提出的"${query.slice(0, 20)}..."这一问题，我正在查阅相关史料进行检索分析。\n\n由于当前后端服务尚未连接，此为前端演示数据。接入清史数据库后，系统将通过 Searcho1 架构从三种史料库中检索：\n\n• **词典库** — 概念与术语的解释\n• **编年库** — 编年史事件（文言原文 + LLM精炼现代文）\n• **档案库** — 清代奏折原文\n\n您可以尝试输入包含"雍正"关键词的问题查看三种史料引用的完整效果。`,
+    references: [
+      {
+        id: 'ref_demo',
+        type: 'dictionary',
+        title: '演示：词典条目',
+        excerpt: '此处为演示数据。实际部署后，系统将自动从词典、编年、档案三种数据库中检索相关史料，并在对话中标注出处。',
+        source: '系统提示',
+        date: '—',
+        relevance: 0.5
+      }
+    ]
+  };
+}
+
+// ============================================================
+//  SSE 流式 API — 实时展示思考过程
+// ============================================================
+
+/**
+ * 事件图标映射
+ */
+const EVENT_ICONS = {
+  start: '🎯',
+  thinking: '💭',
+  thinking_done: '🧠',
+  searching: '🔍',
+  search_done: '📊',
+  refining: '✨',
+  evidence_found: '📌',
+  conflict_analysis: '⚖️',
+  conflict_done: '⚖️',
+  warning: '⚠️',
+  finish_action: '🏁',
+  generating_report: '📝',
+  done: '✅',
+  error: '❌'
+};
+
+/**
+ * 数据库类型 → CSS class
+ */
+function dbBadgeClass(target) {
+  if (target === 'dict') return 'dict';
+  if (target === 'annals') return 'annals';
+  if (target === 'memorials') return 'memorials';
+  return '';
+}
+
+/**
+ * 通过 fetch + ReadableStream 消费 SSE 流
+ */
+async function sendMessageStream(query, sessionId) {
+  const API_BASE = window.location.hostname ? '' : 'http://localhost:8000';
+
+  const response = await fetch(`${API_BASE}/api/chat/stream`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, session_id: sessionId })
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
+
+  // 创建思考面板（替换旧的 typing indicator）
+  const panelId = showThinkingPanel();
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let finalAnswer = null;
+  let finalReferences = [];
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        try {
+          const event = JSON.parse(line.slice(6));
+          handleStreamEvent(event, panelId);
+
+          if (event.type === 'done') {
+            finalAnswer = event.answer;
+            finalReferences = event.references || [];
+          } else if (event.type === 'error') {
+            throw new Error(event.message || '未知错误');
+          }
+        } catch (e) {
+          if (e.message && !e.message.startsWith('HTTP')) {
+            // 解析错误，跳过该事件
+            console.warn('SSE 事件解析失败:', line.slice(0, 80), e.message);
+          } else {
+            throw e;
+          }
+        }
+      }
+    }
+  }
+
+  if (finalAnswer) {
+    finalizeThinkingPanel(panelId, finalAnswer, finalReferences);
+  } else {
+    throw new Error('未收到最终报告');
+  }
+}
+
+/**
+ * 处理单个 SSE 事件，更新思考面板
+ */
+function handleStreamEvent(event, panelId) {
+  const panel = document.getElementById(panelId);
+  if (!panel) return;
+
+  const stepsContainer = panel.querySelector('.thinking-steps');
+  const statusEl = panel.querySelector('.thinking-status');
+  if (!stepsContainer || !statusEl) return;
+
+  const etype = event.type || 'unknown';
+  const icon = EVENT_ICONS[etype] || '📌';
+  const message = event.message || '';
+  const step = event.step || 0;
+
+  // 更新状态文字
+  if (message && etype !== 'thinking_done') {
+    statusEl.textContent = message;
+  }
+
+  // thinking_done: 展示 AI 的自然语言推理过程（主体）+ 解析出的 action（辅助标签）
+  if (etype === 'thinking_done') {
+    const action = event.action || {};
+    const rawContent = (event.content || '').trim();
+
+    // 分离：<action ... /> 之前的部分是 AI 的自然语言推理
+    const actionTagIdx = rawContent.search(/<action\b/i);
+    let thinkingText = '';
+    if (actionTagIdx > 0) {
+      thinkingText = rawContent.slice(0, actionTagIdx).trim();
+      // 清理末尾可能残留的换行和标点杂乱
+      thinkingText = thinkingText.replace(/[\s\n]+$/, '');
+    }
+
+    const labelMap = { dict: '词典', annals: '编年', memorials: '档案' };
+    const target = action.target || '';
+
+    // 构建 action 摘要标签
+    let actionBadgeHTML = '';
+    if (action.type === 'search' && target) {
+      const queryShort = (action.query || '').length > 50
+        ? (action.query || '').slice(0, 50) + '…'
+        : (action.query || '');
+      actionBadgeHTML = `<span class="step-badge ${dbBadgeClass(target)}">📂 ${labelMap[target] || target}</span> 关键词：「${escapeHTML(queryShort)}」`;
+    } else if (action.type === 'finish') {
+      actionBadgeHTML = '✅ 证据收集完毕，进入报告生成';
+    }
+
+    // 决定主文字：有自然语言推理 → 用它；没有 → 用摘要
+    let mainText, detailHTML;
+    if (thinkingText) {
+      // AI 写了推理过程 — 作为主文字展示
+      mainText = thinkingText.length > 250
+        ? thinkingText.slice(0, 250) + '…'
+        : thinkingText;
+      detailHTML = actionBadgeHTML;
+    } else {
+      // AI 直接输出 action 标签 — 用简洁摘要
+      const actionLabel = action.type === 'finish'
+        ? '结束检索'
+        : (action.type === 'search'
+          ? `检索 ${labelMap[target] || target} 库`
+          : (action.type || '未知'));
+      mainText = `第 ${step} 步决策：${actionLabel}`;
+      detailHTML = actionBadgeHTML;
+    }
+
+    // 移除之前的 thinking 占位步骤
+    const prevSteps = stepsContainer.querySelectorAll('[data-step-key="thinking-' + step + '"]');
+    prevSteps.forEach(el => el.remove());
+
+    addStepItem(stepsContainer, {
+      icon: '🧠',
+      text: mainText,
+      detail: detailHTML,
+      status: 'done',
+      stepKey: 'thinking_done-' + step
+    });
+
+    // 状态栏显示推理文字的开头
+    statusEl.textContent = thinkingText
+      ? thinkingText.slice(0, 60) + (thinkingText.length > 60 ? '…' : '')
+      : (action.type === 'search' ? `检索 ${labelMap[target] || target} 库` : '分析中…');
+    scrollStepsToBottom(stepsContainer);
+    return;
+  }
+
+  // 为每种事件类型决定步骤状态
+  const activeTypes = ['thinking', 'searching', 'refining', 'conflict_analysis', 'generating_report'];
+  const doneTypes = ['search_done', 'evidence_found', 'conflict_done', 'finish_action'];
+  const warningTypes = ['warning'];
+  const errorTypes = ['error'];
+
+  let status = 'active';
+  if (doneTypes.includes(etype)) status = 'done';
+  if (warningTypes.includes(etype)) status = 'warning';
+  if (errorTypes.includes(etype)) status = 'error';
+
+  // 对于 thinking 类型，添加占位步骤（后续 thinking_done 会替换）
+  if (etype === 'thinking') {
+    addStepItem(stepsContainer, {
+      icon: icon,
+      text: message || `正在分析第 ${step} 步检索策略...`,
+      detail: '',
+      status: 'active',
+      stepKey: 'thinking-' + step
+    });
+    scrollStepsToBottom(stepsContainer);
+    return;
+  }
+
+  // 构建详情
+  let detail = '';
+  if (etype === 'searching') {
+    const targetLabel = event.target_label || event.target || '';
+    const queryText = (event.query || '').length > 50
+      ? (event.query || '').slice(0, 50) + '...'
+      : (event.query || '');
+    detail = `<span class="step-badge ${dbBadgeClass(event.target)}">${targetLabel}</span> 关键词：「${escapeHTML(queryText)}」`;
+  } else if (etype === 'search_done') {
+    const targetLabel = event.target_label || event.target || '';
+    detail = `<span class="step-badge ${dbBadgeClass(event.target)}">${targetLabel}</span> 命中 <strong>${event.result_count || 0}</strong> 条结果`;
+  } else if (etype === 'evidence_found') {
+    const targetLabel = event.target_label || event.target || '';
+    detail = `<span class="step-badge ${dbBadgeClass(event.target)}">${event.evidence_id || ''}</span>`;
+    if (event.refined_summary) {
+      detail += ` <span style="color:var(--text-muted);font-size:11px;">${escapeHTML(event.refined_summary.slice(0, 80))}...</span>`;
+    }
+  } else if (etype === 'conflict_done') {
+    detail = event.has_conflict ? '实录与档案记载存在差异' : '实录与档案记载一致';
+  } else if (etype === 'start') {
+    detail = '';
+  }
+
+  // 对于 done 类型，标记之前的 active 步骤为 done
+  if (status === 'done') {
+    const prevActive = stepsContainer.querySelectorAll('.thinking-step.active');
+    prevActive.forEach(el => {
+      // 只标记同类型的上一步
+      el.classList.remove('active');
+      el.classList.add('done');
+    });
+  }
+
+  addStepItem(stepsContainer, {
+    icon: icon,
+    text: message || etype,
+    detail: detail,
+    status: status,
+    stepKey: etype + '-' + step
+  });
+
+  scrollStepsToBottom(stepsContainer);
+}
+
+/**
+ * 向步骤容器添加一个步骤条目
+ * extraHTML: 可选的额外 HTML（如 AI 原始回复代码块）
+ */
+function addStepItem(container, { icon, text, detail, status, stepKey, extraHTML }) {
+  // 去重：移除同 key 的旧条目
+  if (stepKey) {
+    const existing = container.querySelector(`.thinking-step[data-step-key="${stepKey}"]`);
+    if (existing) existing.remove();
+  }
+
+  const div = document.createElement('div');
+  div.className = `thinking-step ${status}`;
+  if (stepKey) div.setAttribute('data-step-key', stepKey);
+
+  div.innerHTML = `
+    <span class="step-icon">${icon}</span>
+    <div class="step-content">
+      <span class="step-text">${escapeHTML(text)}</span>
+      ${detail ? `<span class="step-detail">${detail}</span>` : ''}
+      ${extraHTML || ''}
+    </div>
+  `;
+
+  container.appendChild(div);
+
+  // 绑定 AI 回复块的展开/折叠事件
+  if (extraHTML && extraHTML.includes('ai-reply-block')) {
+    const replyBlock = div.querySelector('.ai-reply-block');
+    if (replyBlock) {
+      replyBlock.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const isExpanded = this.classList.contains('expanded');
+        if (isExpanded) {
+          this.classList.remove('expanded');
+        } else {
+          this.classList.add('expanded');
+        }
+      });
+    }
+  }
+
+  return div;
+}
+
+function scrollStepsToBottom(container) {
+  if (container) {
+    container.scrollTop = container.scrollHeight;
+  }
+}
+
+function escapeHTML(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+/**
+ * 显示思考面板（替代 typing indicator）
+ * 返回面板所在的 message div 的 ID
+ */
+function showThinkingPanel() {
+  const panelId = 'thinking-' + Date.now();
+  const msgDiv = document.createElement('div');
+  msgDiv.id = panelId;
+  msgDiv.className = 'message agent';
+  msgDiv.innerHTML = `
+    <div class="message-avatar">清</div>
+    <div class="message-body" style="max-width:92%;">
+      <div class="thinking-panel">
+        <div class="thinking-header" onclick="toggleThinkingPanel('${panelId}')">
+          <span class="thinking-title">📋 思考过程</span>
+          <span class="thinking-status">正在初始化...</span>
+          <span class="thinking-toggle">▼</span>
+        </div>
+        <div class="thinking-steps"></div>
+      </div>
+    </div>
+  `;
+  messagesContainer.appendChild(msgDiv);
+  scrollToBottom();
+  return panelId;
+}
+
+/**
+ * 完成思考面板：折叠步骤，显示最终答案
+ */
+function finalizeThinkingPanel(panelId, answer, references) {
+  const msgDiv = document.getElementById(panelId);
+  if (!msgDiv) return;
+
+  const panel = msgDiv.querySelector('.thinking-panel');
+  const statusEl = msgDiv.querySelector('.thinking-status');
+  const toggleEl = msgDiv.querySelector('.thinking-toggle');
+  const stepsContainer = msgDiv.querySelector('.thinking-steps');
+  const headerEl = msgDiv.querySelector('.thinking-header');
+
+  if (!panel) return;
+
+  // 添加完成步骤
+  if (stepsContainer) {
+    addStepItem(stepsContainer, {
+      icon: '✅',
+      text: '报告生成完毕',
+      detail: `引用 ${references.length} 条史料证据`,
+      status: 'done',
+      stepKey: 'done-final'
+    });
+  }
+
+  // 更新状态
+  if (statusEl) {
+    statusEl.textContent = `完成 — 引用 ${references.length} 条史料`;
+    statusEl.classList.add('done');
+  }
+
+  // 更新 state.references
+  if (references && references.length > 0) {
+    state.references = references;
+    renderReferences(references);
+  }
+
+  // 折叠思考面板
+  if (panel) panel.classList.add('collapsed');
+
+  // 追加最终答案消息
+  const agentMsg = { role: 'agent', content: answer, time: new Date() };
+  state.messages.push(agentMsg);
+  appendMessageBubble(agentMsg);
+
+  scrollToBottom();
+}
+
+/**
+ * 移除思考面板
+ */
+function removeThinkingPanel(panelId) {
+  const el = document.getElementById(panelId);
+  if (el) el.remove();
+}
+
+/**
+ * 切换思考面板展开/折叠
+ */
+function toggleThinkingPanel(panelId) {
+  const msgDiv = document.getElementById(panelId);
+  if (!msgDiv) return;
+  const panel = msgDiv.querySelector('.thinking-panel');
+  if (panel) {
+    panel.classList.toggle('collapsed');
+  }
+}
+
+// ============================================================
+//  Chat UI Logic
+// ============================================================
+function handleKeyDown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(textarea) {
+  textarea.style.height = 'auto';
+  textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+}
+
+async function sendMessage() {
+  const query = userInput.value.trim();
+  if (!query || state.isLoading) return;
+
+  // Hide welcome
+  if (welcomeArea) welcomeArea.style.display = 'none';
+
+  // Add user message
+  const userMsg = { role: 'user', content: query, time: new Date() };
+  state.messages.push(userMsg);
+  appendMessageBubble(userMsg);
+  userInput.value = '';
+  userInput.style.height = 'auto';
+  sendBtn.disabled = true;
+
+  scrollToBottom();
+
+  state.isLoading = true;
+
+  // 优先尝试 SSE 流式，失败则回退到普通 API
+  const useStream = true;  // 可设为 false 强制使用普通 API
+  let streamSuccess = false;
+
+  if (useStream) {
+    try {
+      await sendMessageStream(query, state.sessionId);
+      streamSuccess = true;
+    } catch (err) {
+      console.warn('SSE 流式失败，回退到普通 API:', err.message);
+      // 清理可能已创建的思考面板
+      const stalePanels = messagesContainer.querySelectorAll('.message.agent .thinking-panel');
+      stalePanels.forEach(p => {
+        const parentMsg = p.closest('.message.agent');
+        if (parentMsg && parentMsg.id && parentMsg.id.startsWith('thinking-')) {
+          parentMsg.remove();
+        }
+      });
+    }
+  }
+
+  if (!streamSuccess) {
+    // 回退：使用普通 API
+    const typingId = showTypingIndicator();
+    try {
+      const response = await apiChat(query, state.sessionId);
+      const agentMsg = { role: 'agent', content: response.answer, time: new Date() };
+      state.messages.push(agentMsg);
+      removeTypingIndicator(typingId);
+      if (response.references && response.references.length > 0) {
+        state.references = response.references;
+      }
+      appendMessageBubble(agentMsg);
+      if (response.references && response.references.length > 0) {
+        renderReferences(response.references);
+      }
+      scrollToBottom();
+    } catch (err2) {
+      removeTypingIndicator(typingId);
+      const errMsg = { role: 'agent', content: '抱歉，查询时出现了错误。请稍后重试。', time: new Date() };
+      state.messages.push(errMsg);
+      appendMessageBubble(errMsg);
+    }
+  }
+
+  state.isLoading = false;
+  sendBtn.disabled = false;
+  userInput.focus();
+}
+
+function appendMessageBubble(msg) {
+  const div = document.createElement('div');
+  div.className = `message ${msg.role}`;
+
+  const avatar = document.createElement('div');
+  avatar.className = 'message-avatar';
+  avatar.textContent = msg.role === 'agent' ? '清' : 'U';
+
+  const body = document.createElement('div');
+  body.className = 'message-body';
+
+  const content = document.createElement('div');
+  content.className = 'message-content';
+  content.innerHTML = formatMessageContent(msg.content);
+
+  const time = document.createElement('span');
+  time.className = 'message-time';
+  time.textContent = formatTime(msg.time);
+
+  body.appendChild(content);
+  body.appendChild(time);
+
+  div.appendChild(avatar);
+  div.appendChild(body);
+
+  messagesContainer.appendChild(div);
+
+  // Animate in
+  div.style.animationDelay = '0s';
+}
+
+function formatMessageContent(text) {
+  /**
+   * 将 LLM 考据报告（Markdown）渲染为 HTML。
+   * 处理顺序：
+   *   1. 按行拆分，识别块级元素（标题 / 分割线 / 列表）
+   *   2. 对非块级行，内联处理粗体、斜体、引用标签
+   *   3. 确保引用标签 [1] [2] 仅在 state.references 存在时着色
+   *
+   * 修复要点：
+   *   - 只匹配前面有"非数字字符/行首"的 [N]，避免误匹配年份如 1735[年]
+   *     但原报告中引文格式就是孤立的 [1]，故此用更精准的规则：
+   *     匹配 [N] 时，要求 N 在 1..state.references.length 范围内，超出不渲染。
+   */
+
+  // ---- 行内格式化辅助函数 ----
+  function formatInline(line) {
+    let s = line;
+    // 粗体 **text**
+    s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    // 斜体 *text*（避免匹配 ** 残余，要求 * 前后不是 *）
+    s = s.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
+    // 行内代码 `text`
+    s = s.replace(/`([^`]+)`/g, '<code class="md-code">$1</code>');
+    // 引用标记 [N] → 按来源类型着色
+    s = s.replace(/\[(\d+)\]/g, (match, num) => {
+      const refIdx = parseInt(num) - 1;
+      if (refIdx >= 0 && refIdx < state.references.length) {
+        const ref = state.references[refIdx];
+        const typeClass = ref.type === 'dictionary' ? 'dict' : ref.type === 'chronicle' ? 'chron' : 'arch';
+        return `<span class="citation-tag ${typeClass}" onclick="highlightReference('${ref.id}')" title="点击查看出处：${ref.title}">
+          <span class="citation-dot ${typeClass}"></span>${match}
+        </span>`;
+      }
+      // 超出范围的不着色（可能是正文中恰好出现的 [数字]）
+      return match;
+    });
+    return s;
+  }
+
+  // ---- 块级解析 ----
+  const lines = text.split('\n');
+  let html = '';
+  let inList = false;
+  let listType = '';   // 'ul' | 'ol'
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i];
+    const trimmed = rawLine.trim();
+
+    // --- 标题 ---
+    const h1Match = trimmed.match(/^# (.+)/);
+    const h2Match = trimmed.match(/^## (.+)/);
+    const h3Match = trimmed.match(/^### (.+)/);
+    if (h3Match) {
+      if (inList) { html += `</${listType}>`; inList = false; }
+      html += `<h3 class="md-h3">${formatInline(h3Match[1])}</h3>`;
+      continue;
+    }
+    if (h2Match) {
+      if (inList) { html += `</${listType}>`; inList = false; }
+      html += `<h2 class="md-h2">${formatInline(h2Match[1])}</h2>`;
+      continue;
+    }
+    if (h1Match) {
+      if (inList) { html += `</${listType}>`; inList = false; }
+      html += `<h1 class="md-h1">${formatInline(h1Match[1])}</h1>`;
+      continue;
+    }
+
+    // --- 分割线 ---
+    if (/^-{3,}\s*$/.test(trimmed)) {
+      if (inList) { html += `</${listType}>`; inList = false; }
+      html += '<hr class="md-hr">';
+      continue;
+    }
+
+    // --- 无序列表 - 或 * ---
+    const ulMatch = trimmed.match(/^[\-\*]\s+(.+)/);
+    if (ulMatch && !trimmed.startsWith('**')) {
+      if (!inList || listType !== 'ul') {
+        if (inList) html += `</${listType}>`;
+        html += '<ul class="md-list">';
+        inList = true;
+        listType = 'ul';
+      }
+      html += `<li>${formatInline(ulMatch[1])}</li>`;
+      continue;
+    }
+
+    // --- 有序列表 1. 或 1) ---
+    const olMatch = trimmed.match(/^(\d+)[\.\)]\s+(.+)/);
+    if (olMatch) {
+      // 过滤：纯数字开头且长度 > 4 位（如年份）不作为列表
+      if (olMatch[1].length <= 3) {
+        if (!inList || listType !== 'ol') {
+          if (inList) html += `</${listType}>`;
+          html += '<ol class="md-list">';
+          inList = true;
+          listType = 'ol';
+        }
+        // 用原文完整行，保留原始编号（因为 list-style: none 不自动编号）
+        html += `<li>${formatInline(trimmed)}</li>`;
+        continue;
+      }
+    }
+
+    // --- 非列表项：结束之前打开的列表 ---
+    if (inList) {
+      html += `</${listType}>`;
+      inList = false;
+    }
+
+    // --- 空行 → 段落间隔 ---
+    if (trimmed === '') {
+      html += '<br>';
+    } else {
+      html += `<p class="md-p">${formatInline(rawLine)}</p>`;
+    }
+  }
+
+  // 收尾未关闭的列表
+  if (inList) {
+    html += `</${listType}>`;
+  }
+
+  return html;
+}
+
+function formatTime(date) {
+  const h = date.getHours().toString().padStart(2, '0');
+  const m = date.getMinutes().toString().padStart(2, '0');
+  return `${h}:${m}`;
+}
+
+function showTypingIndicator() {
+  const id = 'typing-' + Date.now();
+  const div = document.createElement('div');
+  div.id = id;
+  div.className = 'message agent';
+  div.innerHTML = `
+    <div class="message-avatar">清</div>
+    <div class="message-body">
+      <div class="message-content" style="padding: 16px 20px;">
+        <div class="typing-indicator">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+    </div>
+  `;
+  messagesContainer.appendChild(div);
+  scrollToBottom();
+  return id;
+}
+
+function removeTypingIndicator(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function scrollToBottom() {
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function askHint(query) {
+  userInput.value = query;
+  sendMessage();
+}
+
+function newSession() {
+  state.messages = [];
+  state.references = [];
+  state.activeRefId = null;
+  state.sessionId = generateId();
+  messagesContainer.innerHTML = '';
+  referenceContent.innerHTML = '';
+  referenceEmpty.style.display = 'flex';
+  refCount.textContent = '0 条';
+  document.getElementById('sourceBreakdown').style.display = 'none';
+
+  // Restore welcome
+  const welcome = document.createElement('div');
+  welcome.className = 'welcome-area';
+  welcome.id = 'welcomeArea';
+  welcome.innerHTML = `
+    <div class="welcome-seal"><span>清</span></div>
+    <h2 class="welcome-title">清史研究智能助手</h2>
+    <p class="welcome-subtitle">融合词典释义、编年史料、奏折档案三种文献，助您探索有清一代的制度、人物、事件与文化。</p>
+    <div class="welcome-hints">
+      <button class="hint-chip" onclick="askHint('雍正朝的军机处是如何运作的？')">雍正朝军机处</button>
+      <button class="hint-chip" onclick="askHint('八旗制度在入关前后有何变化？')">八旗制度演变</button>
+      <button class="hint-chip" onclick="askHint('乾隆朝的十全武功指哪些？')">乾隆十全武功</button>
+      <button class="hint-chip" onclick="askHint('清代江南三大织造局的职能？')">江南织造局</button>
+    </div>
+  `;
+  messagesContainer.appendChild(welcome);
+}
+
+// ============================================================
+//  Reference Panel Logic
+// ============================================================
+function renderReferences(refs) {
+  referenceContent.innerHTML = '';
+  referenceEmpty.style.display = 'none';
+  refCount.textContent = `${refs.length} 条`;
+
+  // 更新来源分布条
+  updateSourceBreakdown(refs);
+
+  refs.forEach((ref, idx) => {
+    const card = document.createElement('div');
+    card.className = `ref-card ${ref.type}`;
+    card.id = `ref-${ref.id}`;
+    card.style.animationDelay = `${idx * 0.08}s`;
+    card.onclick = () => setActiveRef(ref.id);
+
+    const typeLabels = { dictionary: '词典', chronicle: '编年', archive: '档案' };
+    const typeIcons = { dictionary: '📖', chronicle: '📅', archive: '📜' };
+    const typeName = typeLabels[ref.type] || '史料';
+    const typeIcon = typeIcons[ref.type] || '📄';
+
+    // 为长文本生成唯一 ID 用于折叠展开
+    const excerptId = `excerpt-${ref.id}-${idx}`;
+    // 判断是否需要折叠：>150 字启用折叠
+    const excerptText = ref.excerpt || '';
+    const needCollapse = excerptText.length > 150;
+
+    let bodyHTML = '';
+    if (ref.type === 'chronicle') {
+      // 编年数据：文言原文 + LLM精炼现代文 双栏
+      const classicalText = ref.classical_text || '';
+      const modernText = ref.modern_text || '';
+      bodyHTML = `
+        <div class="chronicle-dual">
+          <div class="chronicle-classical">
+            <span class="chronicle-label classical">文言原文</span>
+            <div>${classicalText || '<span style="color:var(--text-muted);font-style:italic;">暂无原文</span>'}</div>
+          </div>
+          <div class="chronicle-modern">
+            <span class="chronicle-label modern">现代文精炼</span>
+            <div>${modernText || '<span style="color:var(--text-muted);font-style:italic;">暂无精炼</span>'}</div>
+          </div>
+        </div>`;
+    } else if (ref.type === 'archive') {
+      // 档案数据：奏折格式
+      const memorialInfo = (ref.memorial_from || ref.memorial_to) ?
+        `<div class="ref-meta" style="margin-bottom:8px;">
+          ${ref.memorial_from ? `<span class="ref-meta-item">✍️ 具奏：${ref.memorial_from}</span>` : ''}
+          ${ref.memorial_to ? `<span class="ref-meta-item">👤 呈送：${ref.memorial_to}</span>` : ''}
+        </div>` : '';
+      bodyHTML = memorialInfo + _buildExcerptHTML(excerptId, excerptText, needCollapse);
+    } else {
+      // 词典数据：概念解释
+      bodyHTML = _buildExcerptHTML(excerptId, excerptText, needCollapse);
+    }
+
+    card.innerHTML = `
+      <div class="ref-card-header">
+        <span class="ref-source-type ${ref.type}">${typeIcon} ${typeName}</span>
+        <div class="ref-relevance">
+          <span>相关度</span>
+          <div class="ref-relevance-bar">
+            <div class="ref-relevance-fill" style="width:${ref.relevance * 100}%"></div>
+          </div>
+          <span>${Math.round(ref.relevance * 100)}%</span>
+        </div>
+      </div>
+      <div class="ref-title">${ref.title}</div>
+      ${bodyHTML}
+      <div class="ref-meta">
+        <span class="ref-meta-item">📅 ${ref.date}</span>
+        <span class="ref-meta-item">📚 ${ref.source}</span>
+      </div>
+    `;
+
+    referenceContent.appendChild(card);
+
+    // 绑定折叠展开事件
+    if (needCollapse) {
+      const excerptEl = card.querySelector(`#${excerptId}`);
+      const toggleBtn = card.querySelector(`#toggle-${excerptId}`);
+      if (excerptEl && toggleBtn) {
+        toggleBtn.addEventListener('click', (e) => {
+          e.stopPropagation();  // 不触发卡片点击
+          const isCollapsed = excerptEl.classList.contains('collapsed');
+          if (isCollapsed) {
+            excerptEl.classList.remove('collapsed');
+            excerptEl.classList.add('expanded');
+            toggleBtn.textContent = '▲ 收起';
+          } else {
+            excerptEl.classList.add('collapsed');
+            excerptEl.classList.remove('expanded');
+            toggleBtn.textContent = '▼ 展开全文';
+          }
+        });
+      }
+    }
+  });
+}
+
+/**
+ * 构建 excerpt 的 HTML。
+ * - 空文本显示占位提示
+ * - >150 字的文本默认折叠，带展开按钮和渐变遮罩
+ */
+function _buildExcerptHTML(excerptId, text, needCollapse) {
+  if (!text) {
+    return `<div class="ref-excerpt-empty">（暂无摘要文本）</div>`;
+  }
+  if (needCollapse) {
+    return `
+      <div class="ref-excerpt collapsed" id="${excerptId}">
+        ${text}
+        <div class="ref-excerpt-fade"></div>
+      </div>
+      <button class="ref-excerpt-toggle" id="toggle-${excerptId}">▼ 展开全文</button>`;
+  }
+  return `<div class="ref-excerpt" id="${excerptId}">${text}</div>`;
+}
+
+function updateSourceBreakdown(refs) {
+  const breakdown = document.getElementById('sourceBreakdown');
+  const counts = { dictionary: 0, chronicle: 0, archive: 0 };
+  refs.forEach(r => { if (counts.hasOwnProperty(r.type)) counts[r.type]++; });
+  const total = refs.length || 1;
+
+  document.getElementById('breakdownDict').style.width = (counts.dictionary / total * 100) + '%';
+  document.getElementById('breakdownChron').style.width = (counts.chronicle / total * 100) + '%';
+  document.getElementById('breakdownArch').style.width = (counts.archive / total * 100) + '%';
+  breakdown.style.display = 'block';
+}
+
+function setActiveRef(id) {
+  state.activeRefId = id;
+  document.querySelectorAll('.ref-card').forEach(card => {
+    card.classList.toggle('active', card.id === `ref-${id}`);
+  });
+  const card = document.getElementById(`ref-${id}`);
+  if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function highlightReference(id) {
+  setActiveRef(id);
+  // Ensure panel is visible
+  if (state.isPanelCollapsed) {
+    toggleReferencePanel();
+  }
+}
+
+function toggleReferencePanel() {
+  state.isPanelCollapsed = !state.isPanelCollapsed;
+  referencePanel.classList.toggle('collapsed', state.isPanelCollapsed);
+  toggleRefBtn.style.display = state.isPanelCollapsed ? 'flex' : 'none';
+}
+
+// ============================================================
+//  Utility
+// ============================================================
+function generateId() {
+  return 'sess_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+}
+
+// ============================================================
+//  初始化
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  userInput.focus();
+
+  // 初始状态引用面板为空
+  refCount.textContent = '0 条';
+});
+</script>
+
+</body>
+</html>
